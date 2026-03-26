@@ -1,0 +1,32 @@
+name: supportops-arena
+version: 0.1.0
+description: OpenEnv environment for customer support ticket triage and policy-safe resolution.
+author: Ritesh Kishor Bhogekar Team
+license: MIT
+tags:
+  - openenv
+  - support-ops
+  - customer-support
+
+api:
+  base_path: /
+  endpoints:
+    reset: /reset
+    step: /step
+    state: /state
+    tasks: /tasks
+    grader: /grader
+    baseline: /baseline
+
+models:
+  observation: src.env.models.Observation
+  action: src.env.models.Action
+  reward: src.env.models.Reward
+
+tasks:
+  - id: easy_ticket_triage
+    difficulty: easy
+  - id: queue_management
+    difficulty: medium
+  - id: policy_safe_resolution
+    difficulty: hard
