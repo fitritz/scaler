@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from src.env.models import Reward, Ticket
+from src.env.models import Incident, Reward
 
 
 def compute_reward(
-    ticket: Ticket | None,
+    incident: Incident | None,
     action_type: str,
     changed: bool,
     policy_violation: bool,
-    resolved_now: bool,
+    closed_now: bool,
 ) -> Reward:
     components: Dict[str, float] = {}
     violations: List[str] = []
@@ -20,27 +20,27 @@ def compute_reward(
         components["no_progress"] = -0.1
         total -= 0.1
 
-    if ticket is not None and changed:
-        if action_type == "classify_ticket" and ticket.category == ticket.expected_category:
-            components["correct_classification"] = 0.2
-            total += 0.2
-        elif action_type == "set_priority" and ticket.priority == ticket.expected_priority:
+    if incident is not None and changed:
+        if action_type == "assess_risk" and incident.risk_level == incident.expected_risk_level:
+            components["correct_risk_assessment"] = 0.25
+            total += 0.25
+        elif action_type == "set_priority" and incident.priority == incident.expected_priority:
             components["correct_priority"] = 0.2
             total += 0.2
-        elif action_type == "assign_team" and ticket.team == ticket.expected_team:
-            components["correct_assignment"] = 0.2
+        elif action_type == "assign_responder" and incident.responder == incident.expected_responder:
+            components["correct_dispatch"] = 0.2
             total += 0.2
-        elif action_type == "request_info":
+        elif action_type == "request_clarification":
             components["clarification"] = 0.05
             total += 0.05
-        elif action_type == "escalate" and ticket.requires_escalation and ticket.escalated:
+        elif action_type == "escalate_authorities" and incident.requires_authority_escalation and incident.escalated_to_authorities:
             components["correct_escalation"] = 0.2
             total += 0.2
-        elif action_type == "escalate" and not ticket.requires_escalation:
+        elif action_type == "escalate_authorities" and not incident.requires_authority_escalation:
             components["wrong_escalation"] = -0.2
             total -= 0.2
-        elif action_type == "draft_reply":
-            components["response_attempt"] = 0.1
+        elif action_type == "send_safety_guidance":
+            components["safety_guidance"] = 0.1
             total += 0.1
 
     if policy_violation:
@@ -48,8 +48,8 @@ def compute_reward(
         total -= 0.3
         violations.append("unsafe_response")
 
-    if resolved_now:
-        components["resolved"] = 0.2
+    if closed_now:
+        components["case_closed"] = 0.2
         total += 0.2
 
     # Clamp to validator-friendly range.

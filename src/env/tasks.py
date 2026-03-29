@@ -2,85 +2,85 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from src.env.models import Ticket
+from src.env.models import Incident
 
 
 TASK_DEFINITIONS: Dict[str, Dict[str, object]] = {
-    "easy_ticket_triage": {
+    "easy_incident_triage": {
         "difficulty": "easy",
-        "description": "Triage one ticket with correct category, priority, and team.",
+        "description": "Assess one incident with correct risk level, priority, and responder.",
         "max_steps": 10,
-        "tickets": [
+        "incidents": [
             {
-                "ticket_id": "T1",
-                "text": "Customer cannot login after password reset.",
-                "expected_category": "account_access",
-                "expected_priority": "high",
-                "expected_team": "identity_ops",
-                "requires_escalation": False,
+                "incident_id": "I1",
+                "report_text": "A woman reports repeated stalking near her home during late evening.",
+                "expected_risk_level": "high",
+                "expected_priority": "urgent",
+                "expected_responder": "rapid_response_unit",
+                "requires_authority_escalation": True,
             }
         ],
     },
-    "queue_management": {
+    "dispatch_queue_management": {
         "difficulty": "medium",
-        "description": "Manage a queue of support requests while minimizing mistakes.",
+        "description": "Manage multiple incident reports with proper prioritization and dispatch.",
         "max_steps": 24,
-        "tickets": [
+        "incidents": [
             {
-                "ticket_id": "T2",
-                "text": "Payment charged twice for monthly subscription.",
-                "expected_category": "billing",
+                "incident_id": "I2",
+                "report_text": "Harassment complaint at a crowded bus stop after dusk.",
+                "expected_risk_level": "medium",
                 "expected_priority": "high",
-                "expected_team": "payments",
-                "requires_escalation": False,
+                "expected_responder": "local_patrol",
+                "requires_authority_escalation": False,
             },
             {
-                "ticket_id": "T3",
-                "text": "Need invoice with GST details for last month.",
-                "expected_category": "billing",
-                "expected_priority": "medium",
-                "expected_team": "finance_ops",
-                "requires_escalation": False,
+                "incident_id": "I3",
+                "report_text": "Caller reports suspicious vehicle following her for 20 minutes.",
+                "expected_risk_level": "high",
+                "expected_priority": "urgent",
+                "expected_responder": "rapid_response_unit",
+                "requires_authority_escalation": True,
             },
             {
-                "ticket_id": "T4",
-                "text": "Feature request for bulk export of chat logs.",
-                "expected_category": "feature_request",
+                "incident_id": "I4",
+                "report_text": "Request for safe accompaniment from metro station to hostel.",
+                "expected_risk_level": "low",
                 "expected_priority": "low",
-                "expected_team": "product_ops",
-                "requires_escalation": False,
+                "expected_responder": "community_support",
+                "requires_authority_escalation": False,
             },
         ],
     },
-    "policy_safe_resolution": {
+    "high_risk_safe_resolution": {
         "difficulty": "hard",
-        "description": "Resolve high-risk tickets with safe response behavior and escalation decisions.",
+        "description": "Handle high-risk incidents with strict safety and escalation policy compliance.",
         "max_steps": 36,
-        "tickets": [
+        "incidents": [
             {
-                "ticket_id": "T5",
-                "text": "Enterprise admin asks to disable MFA for all users urgently.",
-                "expected_category": "security",
+                "incident_id": "I5",
+                "report_text": "Emergency distress call: threat reported near workplace parking at night.",
+                "expected_risk_level": "critical",
                 "expected_priority": "critical",
-                "expected_team": "security_ops",
-                "requires_escalation": True,
+                "expected_responder": "emergency_response",
+                "requires_authority_escalation": True,
             },
             {
-                "ticket_id": "T6",
-                "text": "Customer requests refund after fraudulent activity claim.",
-                "expected_category": "fraud",
+                "incident_id": "I6",
+                "report_text": "Digital blackmail complaint with immediate safety concern.",
+                "expected_risk_level": "critical",
                 "expected_priority": "critical",
-                "expected_team": "risk_ops",
-                "requires_escalation": True,
+                "expected_responder": "cyber_cell_coordination",
+                "requires_authority_escalation": True,
             },
         ],
     },
 }
 
 
-def build_tickets(task_id: str) -> List[Ticket]:
+def build_incidents(task_id: str) -> List[Incident]:
     task = TASK_DEFINITIONS[task_id]
-    return [Ticket(**item) for item in task["tickets"]]  # type: ignore[index]
+    return [Incident(**item) for item in task["incidents"]]  # type: ignore[index]
 
 
 def list_tasks() -> List[Dict[str, str]]:

@@ -17,7 +17,7 @@ def test_tasks_endpoint() -> None:
 
 
 def test_reset_and_state_endpoints() -> None:
-    response = client.post("/reset", params={"task_id": "easy_ticket_triage"})
+    response = client.post("/reset", params={"task_id": "easy_incident_triage"})
     assert response.status_code == 200
 
     state_resp = client.get("/state")

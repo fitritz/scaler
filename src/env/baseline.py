@@ -10,16 +10,22 @@ from src.env.tasks import TASK_DEFINITIONS
 def _play_task(env: SupportOpsEnv, task_id: str) -> float:
     env.reset(task_id)
 
-    for ticket in env.tickets:
-        env.step(Action(action_type="classify_ticket", ticket_id=ticket.ticket_id, value=ticket.expected_category))
-        env.step(Action(action_type="set_priority", ticket_id=ticket.ticket_id, value=ticket.expected_priority))
-        env.step(Action(action_type="assign_team", ticket_id=ticket.ticket_id, value=ticket.expected_team))
+    for incident in env.incidents:
+        env.step(Action(action_type="assess_risk", incident_id=incident.incident_id, value=incident.expected_risk_level))
+        env.step(Action(action_type="set_priority", incident_id=incident.incident_id, value=incident.expected_priority))
+        env.step(Action(action_type="assign_responder", incident_id=incident.incident_id, value=incident.expected_responder))
 
-        if ticket.requires_escalation:
-            env.step(Action(action_type="escalate", ticket_id=ticket.ticket_id))
+        if incident.requires_authority_escalation:
+            env.step(Action(action_type="escalate_authorities", incident_id=incident.incident_id))
 
-        env.step(Action(action_type="draft_reply", ticket_id=ticket.ticket_id, value="We are investigating your request with policy-safe steps."))
-        env.step(Action(action_type="resolve", ticket_id=ticket.ticket_id))
+        env.step(
+            Action(
+                action_type="send_safety_guidance",
+                incident_id=incident.incident_id,
+                value="Stay in a lit public area and keep a trusted contact informed while responders assist.",
+            )
+        )
+        env.step(Action(action_type="close_case", incident_id=incident.incident_id))
 
     return env.grader()["score"]
 

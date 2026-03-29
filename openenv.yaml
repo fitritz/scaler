@@ -1,12 +1,12 @@
-name: supportops-arena
+name: womens-safety-openenv
 version: 0.1.0
-description: OpenEnv environment for customer support ticket triage and policy-safe resolution.
+description: OpenEnv environment for women safety incident triage, dispatch, and policy-safe resolution.
 author: Ritesh Kishor Bhogekar Team
 license: MIT
 tags:
   - openenv
-  - support-ops
-  - customer-support
+  - women-safety
+  - incident-response
 
 api:
   base_path: /
@@ -24,9 +24,9 @@ models:
   reward: src.env.models.Reward
 
 tasks:
-  - id: easy_ticket_triage
+  - id: easy_incident_triage
     difficulty: easy
-  - id: queue_management
+  - id: dispatch_queue_management
     difficulty: medium
-  - id: policy_safe_resolution
+  - id: high_risk_safe_resolution
     difficulty: hard

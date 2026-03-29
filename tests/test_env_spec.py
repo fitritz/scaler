@@ -6,13 +6,13 @@ from src.env.models import Action
 
 def test_reset_step_state_cycle() -> None:
     env = SupportOpsEnv()
-    obs = env.reset("easy_ticket_triage")
+    obs = env.reset("easy_incident_triage")
 
-    assert obs.task_id == "easy_ticket_triage"
-    assert obs.queue_size == 1
+    assert obs.task_id == "easy_incident_triage"
+    assert obs.pending_incident_count == 1
 
-    ticket_id = obs.tickets[0].ticket_id
-    result = env.step(Action(action_type="classify_ticket", ticket_id=ticket_id, value="account_access"))
+    incident_id = obs.incidents[0].incident_id
+    result = env.step(Action(action_type="assess_risk", incident_id=incident_id, value="high"))
 
     assert result.reward.total >= -1.0
     assert result.reward.total <= 1.0
@@ -20,4 +20,4 @@ def test_reset_step_state_cycle() -> None:
 
     state = env.state()
     assert state["initialized"] is True
-    assert state["task_id"] == "easy_ticket_triage"
+    assert state["task_id"] == "easy_incident_triage"

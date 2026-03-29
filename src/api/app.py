@@ -6,17 +6,17 @@ from src.env.baseline import run_baseline
 from src.env.environment import SupportOpsEnv
 from src.env.models import Action
 
-app = FastAPI(title="SupportOps Arena", version="0.1.0")
+app = FastAPI(title="Women Safety OpenEnv", version="0.1.0")
 env = SupportOpsEnv()
 
 
 @app.get("/")
 def health() -> dict[str, str]:
-    return {"status": "ok", "service": "supportops-arena"}
+    return {"status": "ok", "service": "womens-safety-openenv"}
 
 
 @app.post("/reset")
-def reset(task_id: str = "easy_ticket_triage") -> dict:
+def reset(task_id: str = "easy_incident_triage") -> dict:
     try:
         return env.reset(task_id).model_dump()
     except ValueError as exc:

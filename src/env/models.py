@@ -6,44 +6,44 @@ from pydantic import BaseModel, Field
 
 
 ActionType = Literal[
-    "classify_ticket",
+    "assess_risk",
     "set_priority",
-    "assign_team",
-    "request_info",
-    "draft_reply",
-    "escalate",
-    "resolve",
+    "assign_responder",
+    "request_clarification",
+    "send_safety_guidance",
+    "escalate_authorities",
+    "close_case",
 ]
 
 
-class Ticket(BaseModel):
-    ticket_id: str
-    text: str
-    expected_category: str
+class Incident(BaseModel):
+    incident_id: str
+    report_text: str
+    expected_risk_level: str
     expected_priority: str
-    expected_team: str
-    requires_escalation: bool = False
-    category: Optional[str] = None
+    expected_responder: str
+    requires_authority_escalation: bool = False
+    risk_level: Optional[str] = None
     priority: Optional[str] = None
-    team: Optional[str] = None
-    escalated: bool = False
-    resolved: bool = False
+    responder: Optional[str] = None
+    escalated_to_authorities: bool = False
+    case_closed: bool = False
     policy_violation: bool = False
-    clarification_requests: int = 0
+    clarification_count: int = 0
 
 
 class Observation(BaseModel):
     task_id: str
     step_count: int
     max_steps: int
-    queue_size: int
-    pending_ticket_ids: List[str]
-    tickets: List[Ticket]
+    pending_incident_count: int
+    pending_incident_ids: List[str]
+    incidents: List[Incident]
 
 
 class Action(BaseModel):
     action_type: ActionType
-    ticket_id: Optional[str] = None
+    incident_id: Optional[str] = None
     value: Optional[str] = None
 
 

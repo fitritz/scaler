@@ -3,11 +3,16 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from src.env.graders import task_grading_summary
-from src.env.models import Action, Observation, StepResult, Ticket
+from src.env.models import Action, Incident, Observation, StepResult
 from src.env.rewards import compute_reward
-from src.env.tasks import TASK_DEFINITIONS, build_tickets, list_tasks
+from src.env.tasks import TASK_DEFINITIONS, build_incidents, list_tasks
 
-UNSAFE_TERMS = ("disable all security", "share password", "bypass policy")
+UNSAFE_TERMS = (
+    "ignore the threat",
+    "do nothing",
+    "meet alone",
+    "share your live location publicly",
+)
 
 
 class SupportOpsEnv:
@@ -15,11 +20,11 @@ class SupportOpsEnv:
         self.task_id: Optional[str] = None
         self.max_steps: int = 0
         self.step_count: int = 0
-        self.tickets: list[Ticket] = []
+        self.incidents: list[Incident] = []
         self.policy_violations: int = 0
         self.done: bool = False
 
-    def reset(self, task_id: str = "easy_ticket_triage") -> Observation:
+    def reset(self, task_id: str = "easy_incident_triage") -> Observation:
         if task_id not in TASK_DEFINITIONS:
             raise ValueError(f"Unknown task_id: {task_id}")
 
@@ -28,7 +33,7 @@ class SupportOpsEnv:
         self.step_count = 0
         self.policy_violations = 0
         self.done = False
-        self.tickets = build_tickets(task_id)
+        self.incidents = build_incidents(task_id)
         return self._observation()
 
     def step(self, action: Action) -> StepResult:
@@ -38,56 +43,56 @@ class SupportOpsEnv:
             raise RuntimeError("Episode is done. Call reset() to start a new one.")
 
         self.step_count += 1
-        ticket = self._get_ticket(action.ticket_id)
+        incident = self._get_incident(action.incident_id)
         changed = False
         policy_violation = False
-        resolved_now = False
+        closed_now = False
         info: Dict[str, Any] = {}
 
-        if ticket is None and action.action_type not in {"request_info"}:
-            info["warning"] = "ticket_id required for this action"
+        if incident is None:
+            info["warning"] = "incident_id required and must exist"
 
-        if action.action_type == "classify_ticket" and ticket is not None and action.value:
-            ticket.category = action.value
+        if action.action_type == "assess_risk" and incident is not None and action.value:
+            incident.risk_level = action.value
             changed = True
-        elif action.action_type == "set_priority" and ticket is not None and action.value:
-            ticket.priority = action.value
+        elif action.action_type == "set_priority" and incident is not None and action.value:
+            incident.priority = action.value
             changed = True
-        elif action.action_type == "assign_team" and ticket is not None and action.value:
-            ticket.team = action.value
+        elif action.action_type == "assign_responder" and incident is not None and action.value:
+            incident.responder = action.value
             changed = True
-        elif action.action_type == "request_info" and ticket is not None:
-            ticket.clarification_requests += 1
+        elif action.action_type == "request_clarification" and incident is not None:
+            incident.clarification_count += 1
             changed = True
-        elif action.action_type == "draft_reply" and ticket is not None and action.value:
-            reply = action.value.lower()
+        elif action.action_type == "send_safety_guidance" and incident is not None and action.value:
+            guidance = action.value.lower()
             changed = True
-            if any(term in reply for term in UNSAFE_TERMS):
-                ticket.policy_violation = True
+            if any(term in guidance for term in UNSAFE_TERMS):
+                incident.policy_violation = True
                 policy_violation = True
                 self.policy_violations += 1
-        elif action.action_type == "escalate" and ticket is not None:
-            ticket.escalated = True
+        elif action.action_type == "escalate_authorities" and incident is not None:
+            incident.escalated_to_authorities = True
             changed = True
-        elif action.action_type == "resolve" and ticket is not None:
-            triage_ready = (
-                ticket.category == ticket.expected_category
-                and ticket.priority == ticket.expected_priority
-                and ticket.team == ticket.expected_team
+        elif action.action_type == "close_case" and incident is not None:
+            assignment_ready = (
+                incident.risk_level == incident.expected_risk_level
+                and incident.priority == incident.expected_priority
+                and incident.responder == incident.expected_responder
             )
-            escalation_ready = (not ticket.requires_escalation) or ticket.escalated
-            if triage_ready and escalation_ready and not ticket.policy_violation:
-                ticket.resolved = True
-                resolved_now = True
+            escalation_ready = (not incident.requires_authority_escalation) or incident.escalated_to_authorities
+            if assignment_ready and escalation_ready and not incident.policy_violation:
+                incident.case_closed = True
+                closed_now = True
                 changed = True
             else:
-                info["warning"] = "resolve blocked: missing correct triage/escalation or policy violation"
+                info["warning"] = "close_case blocked: missing correct risk/dispatch/escalation or policy violation"
 
-        reward = compute_reward(ticket, action.action_type, changed, policy_violation, resolved_now)
+        reward = compute_reward(incident, action.action_type, changed, policy_violation, closed_now)
 
         if self.step_count >= self.max_steps:
             self.done = True
-        if self.tickets and all(t.resolved for t in self.tickets):
+        if self.incidents and all(i.case_closed for i in self.incidents):
             self.done = True
         if self.policy_violations >= 3:
             self.done = True
@@ -96,7 +101,7 @@ class SupportOpsEnv:
         if self.done:
             info["grader"] = task_grading_summary(
                 self.task_id,
-                self.tickets,
+                self.incidents,
                 self.policy_violations,
                 self.step_count,
                 self.max_steps,
@@ -122,7 +127,7 @@ class SupportOpsEnv:
             "max_steps": self.max_steps,
             "policy_violations": self.policy_violations,
             "done": self.done,
-            "tickets": [ticket.model_dump() for ticket in self.tickets],
+            "incidents": [incident.model_dump() for incident in self.incidents],
         }
 
     def tasks(self) -> Dict[str, Any]:
@@ -130,16 +135,16 @@ class SupportOpsEnv:
             "tasks": list_tasks(),
             "action_schema": {
                 "action_type": [
-                    "classify_ticket",
+                    "assess_risk",
                     "set_priority",
-                    "assign_team",
-                    "request_info",
-                    "draft_reply",
-                    "escalate",
-                    "resolve",
+                    "assign_responder",
+                    "request_clarification",
+                    "send_safety_guidance",
+                    "escalate_authorities",
+                    "close_case",
                 ],
-                "ticket_id": "string (required for most actions)",
-                "value": "string (used by classify/set/assign/draft)",
+                "incident_id": "string (required for all incident actions)",
+                "value": "string (used by assess/set/assign/guidance)",
             },
         }
 
@@ -148,27 +153,27 @@ class SupportOpsEnv:
             raise RuntimeError("Environment not initialized. Call reset() first.")
         return task_grading_summary(
             self.task_id,
-            self.tickets,
+            self.incidents,
             self.policy_violations,
             self.step_count,
             self.max_steps,
         )
 
     def _observation(self) -> Observation:
-        pending = [ticket.ticket_id for ticket in self.tickets if not ticket.resolved]
+        pending = [incident.incident_id for incident in self.incidents if not incident.case_closed]
         return Observation(
             task_id=self.task_id or "uninitialized",
             step_count=self.step_count,
             max_steps=self.max_steps,
-            queue_size=len(pending),
-            pending_ticket_ids=pending,
-            tickets=self.tickets,
+            pending_incident_count=len(pending),
+            pending_incident_ids=pending,
+            incidents=self.incidents,
         )
 
-    def _get_ticket(self, ticket_id: Optional[str]) -> Optional[Ticket]:
-        if ticket_id is None:
+    def _get_incident(self, incident_id: Optional[str]) -> Optional[Incident]:
+        if incident_id is None:
             return None
-        for ticket in self.tickets:
-            if ticket.ticket_id == ticket_id:
-                return ticket
+        for incident in self.incidents:
+            if incident.incident_id == incident_id:
+                return incident
         return None
